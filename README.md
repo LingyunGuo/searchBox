@@ -5,9 +5,9 @@ To enable this searchBox plug-in on the page, you need three parameters: configu
 
 ## Configuration Option
 
-### ajax_url: String       **required**
+### ajax_url: String       ★
 The url for retrieving search results (GET).
-### result_tag: Array[String]      **required**
+### result_tag: Array[String]      ★
 The tag used to specify different groups of data coming in from the ajax call. For example, if you have two groups of data, "line" and "block" respectively, then the `result_tag` option should be
 ```
 result_tag: ["line","block"]
@@ -44,10 +44,12 @@ If this is set to a number, then all data groups would display the same number o
 ```
 This means that only display one data entry for "line" group, and display all data in "block" group. The "block" key-value pair can be omitted.
 
-## Search Box Element       **required**
+#### Options with ★ is required.
+
+## Search Box Element       ★
 The element pointer to the input box where user enters query. Should be a jQuery element.
 
-## Result Panel Element     **required**
+## Result Panel Element     ★
 The element pointer to the element where search results are displayed. Should be a jQuery element.
 
 ## Result JSON Format
