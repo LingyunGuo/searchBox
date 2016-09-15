@@ -105,11 +105,8 @@
             var currentData = data[currentTag];
             var currentTemplate = that.template.find("." + currentTag);
             var prevItem;
-            console.log("currentTag", currentTag);
             for (var j = 0; j < currentData.length; j++) {
-                console.log("currentData", currentData[j]);
-                currentTemplate.parent().find("." + currentTag + "-text").text(currentData[j]);
-                console.log("currentTemplate", currentTemplate.html());
+                currentTemplate.find("." + currentTag + "-text").addBack("." + currentTag + "-text").text(currentData[j]);
                 if (prevItem) {
                     prevItem.after(currentTemplate);
                 }
