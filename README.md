@@ -8,20 +8,27 @@ To enable this searchBox plug-in on the page, you need three parameters: configu
 #### ajax_url: String       **required**
 The url for retrieving search results (GET).
 #### result_tag: Array[String]      **required**
-The tag used to specify different group of data coming in from the ajax call. For example, if you have two groups of data, "line" and "block" respectively, then the `result_tag` option should be
+The tag used to specify different groups of data coming in from the ajax call. For example, if you have two groups of data, "line" and "block" respectively, then the `result_tag` option should be
 ```
 result_tag: ["line","block"]
 ```
 The order in result_tag matters.
 #### templateUrl: String
-The url used to read in result display template, if no templateUrl is set, the searchBox would use its default template.
-#### lazySearch: Bool
-A boolean that determine whether to do the search everytime a character is entered, or only perform ajax call when the user stops typing. Default to be `true` (only search when typing stops).
+The url used to read in result display template, if no templateUrl is set, the searchBox would use its default template ([See here](#defaultTemplate)).
+#### lazySearch: Boolean
+A boolean that determine whether to do the search everytime a character is entered, or only perform ajax call when the user stops typing. **Default to be `true` (only search when typing stops).**
+#### disappearOnBlur: Boolean
+A boolean that controls whether the result panel should disappear when both search box and result panel is not focused. **Default to be `false`.**
+#### showOnClick: Boolean
+A boolean that controls whether the result panel should pop up when search box is clicked. **Default to be `false`.**
+
+This would have no effect if disappearOnBlur is not set or set to be false, since the result panel would always be on the page.
 #### showAmount: Number || Object
 The value decides how many data entries would be displayed for **each** data group.
-If this is not being set, then every data group would display all the value it contains.
-If this is set to a number, then all data groups would display the same number of data entries(if they could).
-This can also be set to an object, which would look like:
+
+**Default to have every data group display all the value it contains.**
+
+If this is set to a number, then all data groups would display the same number of data entries(if they could). This can also be set to an object, which would look like:
 ```
 {
     "line": 1,
@@ -52,8 +59,10 @@ The keys ("line","block") have to match what is in the `result_tag` option, but 
 
 ## Template Format
 Still, assume we have two groups of data, "line" and "block". Then in the template, we have to define six classes: `.line`, `.line-text`, `line-showMore`, `.block`, `.block-text`, `block-showMore`.
+
 `.line` and `.block` are what would get repeated for every data entry in the result JSON, `.line-text` and `.block-text` are where the data actually goes in, while `.line-showMore` and `.block-showMore` would only appear at the end when `showAmount` is set and the result is not fully displayed.
-The default template is:
+
+<a name="defaultTemplate"></a>The default template is:
 ```
 <ul class='container'>
     <li class='tag tag-text'></li>

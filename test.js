@@ -1,7 +1,7 @@
 $(document).ready(function () {
     var test = new searchBox({
-        "ajax_url": "/_search",
-        disappearOnBlur: false,
+        "ajax_url": "http://localhost:8081/",
+        disappearOnBlur: true,
         showAmount: 1,
         result_tag: ["line", "block"]
     }, $("#searchBox"), $("#searchBox_result"));

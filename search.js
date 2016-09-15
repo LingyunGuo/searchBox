@@ -37,6 +37,7 @@
         this.template = $(this.template);
         this.lazySearch = (undefined === option.lazySearch ? true : option.lazySearch);
         this.disappearOnBlur = (undefined === option.disappearOnBlur ? true : option.disappearOnBlur);
+        this.showOnClick = option.showOnClick;
         this.showAmount = {};
         for (var i = 0; i < this.result_tag.length; i++) {
             if (undefined === option.showAmount) {
@@ -51,6 +52,20 @@
             else {
                 throw new Error("Invalid showAmount option");
             }
+        }
+
+        if (this.disappearOnBlur) {
+            $(window.document).click(function (event) {
+                if (that.search_box.has($(event.target)).length <= 0 && that.result_panel.has($(event.target)).length <= 0) {
+                    searchBox.prototype.hide.call(that);
+                }
+            });
+        }
+        if (this.showOnClick) {
+            that.search_box.click(function () {
+                event.stopPropagation();
+                searchBox.prototype.show.call(that);
+            });
         }
 
         this.search_box.keyup(function (keyEvent) {
@@ -82,6 +97,8 @@
         this.result_panel.clearPanel();
     };
 
+
+
     function quitSearch() {
         this.search_box.val("");
         this.result_panel.clearPanel.call(this);
@@ -98,7 +115,17 @@
             return quitSearch.call(that);
         }
         // if (keyEvent.keyCode === 13) {
-        getResult.call(that);
+        if (that.lazySearch) {
+            if (that.loading) {
+                clearTimeout(that.loading);
+            }
+            that.loading = setTimeout(function () {
+                getResult.call(that);
+            }, 200);
+        }
+        else {
+            getResult.call(that);
+        }
         // }
     }
 
@@ -106,35 +133,26 @@
         var that = this;
         that.query = that.search_box.val();
 
-        function ajaxCall() {
-            // harcode in data for now
-            that.currentData = {
-                "line": [
-                    "First Line in Result",
-                    "Second Line in Result"
-                ],
-                "block": [
-                    "This is supposed to be a HUGE chunk of data",
-                    "But it's not right now"
-                ]
-            };
-            displayResult.call(that, that.currentData);
-        }
-
-        if (that.lazySearch) {
-            if (that.loading) {
-                clearTimeout(that.loading);
+        $.ajax(that.ajax_url, {
+            data: {
+                q: that.query || ''
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data) {
+                    that.currentData = data;
+                    displayResult.call(that, that.currentData);
+                }
+            },
+            error: function (data) {
+                throw JSON.stringify(data);
             }
-            that.loading = setTimeout(ajaxCall, 200);
-        }
-        else {
-            ajaxCall();
-        }
-
+        });
     }
 
     function displayResult(data) {
         var that = this;
+        that.result_panel.css("display", "block");
         that.result_panel.clearPanel.call(that);
         var currentTemplate = that.template.clone();
         that.result_panel.append(currentTemplate);
