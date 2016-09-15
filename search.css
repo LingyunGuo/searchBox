@@ -1,0 +1,29 @@
+ul {
+    list-style: none;
+}
+
+[id*="_result"] {
+    max-width: 800px;
+}
+
+[id*="_result"] a {
+    color: #def;
+}
+
+[class*="_float"] {
+    font-family: "Open Sans", sans-serif;
+    width: 500px;
+    position: absolute;
+    overflow: auto;
+    display: none;
+    background: #2c2c2c;
+    color: #def;
+    padding: 10px;
+    border-radius: 0px 0px 10px 10px;
+    box-shadow: 5px 5px 5px #a0a0a0;
+}
+
+[class*="_top"] {
+    border-radius: 10px 10px 0px 0px;
+    box-shadow: 5px -5px 5px #a0a0a0;
+}

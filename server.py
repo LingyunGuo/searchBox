@@ -19,7 +19,19 @@ class myHandler(BaseHTTPRequestHandler):
 		
 		self.end_headers()
 		# Send the html message
-		if 'q' in param and param['q'][0] =='a':
+		print(param);
+		if 'q' not in param or 'q' in param and param['q'][0] =='':
+			self.wfile.write(json.dumps({
+					"line": [
+						"No",
+						"Query"
+					],
+					"block": [
+						"At",
+						"All"
+					]
+				}))
+		elif param['q'][0] =='a':
 			self.wfile.write(json.dumps({
 					"line": [
 						"Input is a",
