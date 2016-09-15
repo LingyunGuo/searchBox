@@ -26,33 +26,69 @@
             this.template.load(this.templateUrl);
         }
         else {
-            this.template = $.parseHTML("<ul class='container'><li class='line line-text'></li><li class='block'><p class='block-text'></p></li></ul>");
+            var html = "<ul class='container'>";
+            for (var i = 0; i < this.result_tag.length; i++) {
+                html += "   <li class='" + this.result_tag[i] + " " + this.result_tag[i] + "-text'></li>";
+                html += "   <li class='" + this.result_tag[i] + "-showMore'>Show More</li>";
+            }
+            html += "</ul>";
+            this.template = $.parseHTML(html);
         }
         this.template = $(this.template);
-        // this.result_panel.css({
-        //     "max-height": option.resultPanelMaxHeight ? option.resultPanelMaxHeight : '500px',
-        //     width: option.resultPanelWidth ? option.resultPanelWidth : '800px'
-        // });
         this.lazySearch = (undefined === option.lazySearch ? true : option.lazySearch);
         this.disappearOnBlur = (undefined === option.disappearOnBlur ? true : option.disappearOnBlur);
-
+        this.showAmount = {};
+        for (var i = 0; i < this.result_tag.length; i++) {
+            if (undefined === option.showAmount) {
+                this.showAmount[this.result_tag[i]] = undefined;
+            }
+            else if (typeof option.showAmount === "number") {
+                this.showAmount[this.result_tag[i]] = option.showAmount;
+            }
+            else if (typeof option.showAmount === "object") {
+                this.showAmount[this.result_tag[i]] = option.showAmount[this.result_tag[i]];
+            }
+            else {
+                throw new Error("Invalid showAmount option");
+            }
+        }
 
         this.search_box.keyup(function (keyEvent) {
             keyUp.call(that, keyEvent);
         });
 
         this.result_panel.clearPanel = clearPanel;
+    };
 
-        return this.search_box;
+    searchBox.prototype.show = function () {
+        this.result_panel.css("display", "block");
+    };
+    searchBox.prototype.hide = function (clearOnHide) {
+        this.result_panel.css("display", "none");
+        if (clearOnHide) {
+            this.result_panel.clearPanel.call(this);
+        }
+    };
+    searchBox.prototype.search = function (query, autoShow) {
+        if (undefined !== query) {
+            this.query = query;
+        }
+        getResult.call(this);
+        if (autoShow) {
+            this.result_panel.css("display", "block");
+        }
+    };
+    searchBox.prototype.clear = function () {
+        this.result_panel.clearPanel();
     };
 
     function quitSearch() {
         this.search_box.val("");
-        this.result_panel.clearPanel();
+        this.result_panel.clearPanel.call(this);
     }
 
     function clearPanel() {
-        $(this).empty();
+        this.result_panel.empty();
     }
 
 
@@ -66,13 +102,13 @@
         // }
     }
 
-    function getResult(category, callback) {
+    function getResult() {
         var that = this;
         that.query = that.search_box.val();
 
         function ajaxCall() {
             // harcode in data for now
-            displayResult.call(that, that.result_panel, {
+            that.currentData = {
                 "line": [
                     "First Line in Result",
                     "Second Line in Result"
@@ -81,7 +117,8 @@
                     "This is supposed to be a HUGE chunk of data",
                     "But it's not right now"
                 ]
-            });
+            };
+            displayResult.call(that, that.currentData);
         }
 
         if (that.lazySearch) {
@@ -96,29 +133,37 @@
 
     }
 
-    function displayResult(panel, data) {
+    function displayResult(data) {
         var that = this;
-        that.result_panel.clearPanel();
-        that.result_panel.append(that.template);
+        that.result_panel.clearPanel.call(that);
+        var currentTemplate = that.template.clone();
+        that.result_panel.append(currentTemplate);
         for (var i = 0; i < that.result_tag.length; i++) {
             var currentTag = that.result_tag[i];
             var currentData = data[currentTag];
-            var currentTemplate = that.template.find("." + currentTag);
+            var currentElement = currentTemplate.find("." + currentTag);
             var prevItem;
-            for (var j = 0; j < currentData.length; j++) {
-                currentTemplate.find("." + currentTag + "-text").addBack("." + currentTag + "-text").text(currentData[j]);
+            var maximum;
+            if (undefined !== that.showAmount[currentTag]) {
+                maximum = Math.min(that.showAmount[currentTag], currentData.length);
+            }
+            else {
+                maximum = currentData.length;
+            }
+            for (var j = 0; j < maximum; j++) {
+                currentElement.find("." + currentTag + "-text").addBack("." + currentTag + "-text").text(currentData[j]);
                 if (prevItem) {
-                    prevItem.after(currentTemplate);
+                    prevItem.after(currentElement);
                 }
-                prevItem = currentTemplate;
-                currentTemplate = prevItem.clone();
+                prevItem = currentElement;
+                currentElement = prevItem.clone();
+            }
+            prevItem = null;
+            var showMoreElement = currentTemplate.find("." + currentTag + "-showMore");
+            if (maximum !== that.showAmount[currentTag]) {
+                showMoreElement.remove();
             }
         }
     }
 
-    // function arrangeLayout() { }
-
-    // function useTemplate(data, template, callback) {
-    //     var container = $.parseHTML(template);
-    // }
 } ());
