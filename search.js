@@ -23,13 +23,22 @@
         this.result_tag = option.result_tag;
         if (option.templateUrl) {
             this.templateUrl = option.templateUrl;
-            this.template.load(this.templateUrl);
+            $.ajax({
+                url: this.templateUrl,
+                dataType: "html"
+            }).done(function (responseHtml) {
+                this.template = responseHtml;
+            });
         }
         else {
             var html = "<ul class='container'>";
             for (var i = 0; i < this.result_tag.length; i++) {
-                html += "   <li class='" + this.result_tag[i] + " " + this.result_tag[i] + "-text'></li>";
-                html += "   <li class='" + this.result_tag[i] + "-showMore' search-data-tag='" + this.result_tag[i] + "'><a href='#'>Show More</a></li>";
+                html += "<h3 class='" + this.result_tag[i] + "-title'>" + this.result_tag[i] + "<span class='search-toggle-btn ";
+                html += this.result_tag[i] + "'><a href='#' class='" + this.result_tag[i] + "'>+</a></span></h3>";
+                html += "<li class='" + this.result_tag[i] + " " + this.result_tag[i] + "-item'>"; html += "<p class='" + this.result_tag[i] + " " + this.result_tag[i] + "-text'></p><img class='" + this.result_tag[i] + " " + this.result_tag[i] + "-img'/></li>";
+                if (i != this.result_tag.length - 1) {
+                    html += "<li><hr/></li>";
+                }
             }
             html += "</ul>";
             this.template = $.parseHTML(html);
@@ -41,6 +50,8 @@
         this.searchAtStart = option.searchAtStart;
         this.searchOnEnter = option.searchOnEnter;
         this.attachToSearchBox = option.attachToSearchBox;
+        this.toggleDataFcn = option.toggleDataFcn || toggleDataFcn;
+        this.attemptToFitIn = (option.attemptToFitIn === undefined ? "none" : option.attemptToFitIn).toLowerCase();
         this.showAmount = {};
         for (var i = 0; i < this.result_tag.length; i++) {
             if (undefined === option.showAmount) {
@@ -62,12 +73,20 @@
             keyUp.call(that, keyEvent);
         });
         this.result_panel.click(function (event) {
-            var tag = $(event.target).parent().attr("search-data-tag");
-            if (tag) {
+            if ($(event.target).parent().hasClass("search-toggle-btn")) {
+                var tag = $(event.target).attr("class");
                 event.stopPropagation();
-                showAll.call(that,tag);
+                if (that.toggleDataFcn($(event.target))) {
+                    showMore.call(that, tag);
+                    if (this.attachToSearchBox) {
+                        setPosition.call(this);
+                    }
+                }
+                else {
+                    hideMore.call(that, tag);
+                }
             }
-        })
+        });
     };
 
     searchBox.prototype.show = function () {
@@ -164,7 +183,15 @@
             success: function (data) {
                 if (data) {
                     that.currentData = data;
-                    displayResult.call(that, that.currentData);
+                    clearPanel.call(that);
+                    var elements = displayResult(that.result_tag, that.showAmount, that.currentData, that.template.clone());
+                    for (var i = 0; i < elements.length; i++) {
+                        that.result_panel.append(elements[i]);
+                    }
+                    searchBox.prototype.show.call(that);
+                    if (that.attachToSearchBox) {
+                        setPosition.call(that);
+                    }
                 }
             },
             error: function (data) {
@@ -173,41 +200,66 @@
         });
     }
 
-    function displayResult(data) {
-        var that = this;
-        searchBox.prototype.show.call(that);
-        clearPanel.call(that);
-        var currentTemplate = that.template.clone();
-        that.result_panel.append(currentTemplate);
-        for (var i = 0; i < that.result_tag.length; i++) {
-            var currentTag = that.result_tag[i];
+    function displayResult(tagList, showAmount, data, template) {
+        var templateList = [];
+        for (var i = 0; i < tagList.length; i++) { // For each group of data
+            var currentTag = tagList[i];
             var currentData = data[currentTag];
-            var currentElement = currentTemplate.find("." + currentTag);
+            var title = template.find("." + currentTag + "-title");
+            if (title) {
+                templateList.push(title.clone());
+            }
+            var currentItem = template.find("." + currentTag + "-item").clone();
             var prevItem;
             var maximum;
-            if (undefined !== that.showAmount[currentTag]) {
-                maximum = Math.min(that.showAmount[currentTag], currentData.length);
+            if (undefined !== showAmount[currentTag]) {
+                maximum = Math.min(showAmount[currentTag], currentData.length);
             }
             else {
                 maximum = currentData.length;
             }
-            for (var j = 0; j < maximum; j++) {
-                currentElement.find("." + currentTag + "-text").addBack("." + currentTag + "-text").text(currentData[j]);
-                if (prevItem) {
-                    prevItem.after(currentElement);
+
+            for (var j = 0; j < maximum; j++) { // For each item in the group
+                for (var k = 0; k < currentData[j].length; k++) { // For each element in the item
+                    var type = currentData[j][k].type;
+                    var elementClassSelector = "." + tagList[i] + "-" + type;
+                    var value = currentData[j][k].value;
+                    var index = currentData[j][k].index;
+                    var currentElement = currentItem.find(elementClassSelector).addBack(elementClassSelector);
+                    if (currentElement) {
+                        currentElement = currentElement.eq(index);
+                    }
+                    if (!currentElement) {
+                        break;
+                    }
+                    for (var key in value) { // For each attribute of current element
+                        if (key === "text") {
+                            currentElement.text(currentData[j][k].value[key]);
+                        }
+                        else if (key === "src" || key === "href" || key === "id") {
+                            currentElement.attr(key, currentData[j][k].value[key]);
+                        }
+                        else if (key === "html") {
+                            currentElement.html(currentData[j][k].value[key]);
+                        }
+                        else if (key === "class") {
+                            currentElement.addClass(currentData[j][k].value[key]);
+                        }
+                    }
                 }
-                prevItem = currentElement;
-                currentElement = prevItem.clone();
+                if (prevItem) {
+                    prevItem.after(currentItem);
+                }
+                prevItem = currentItem;
+                currentItem = currentItem.clone();
             }
             prevItem = null;
-            var showMoreElement = currentTemplate.find("." + currentTag + "-showMore");
-            if (maximum !== that.showAmount[currentTag]) {
-                showMoreElement.remove();
+            if (maximum !== showAmount[currentTag]) {
+                $("." + tagList[i] + ".search-toggle-btn").children("a").remove();
             }
+            templateList.push(currentItem);
         }
-        if (this.attachToSearchBox) {
-            setPosition.call(that);
-        }
+        return templateList;
     }
 
     function setPosition() {
@@ -215,14 +267,22 @@
         var search_box_height = this.search_box.outerHeight();
         var top = pos.top + search_box_height;
         var left = pos.left;
-        var panelWidth = this.result_panel.outerWidth();
-        var panelHeight = this.result_panel.outerHeight();
-        if (left + panelWidth > $(window).width()) {
-            left = $(window).width() - panelWidth;
-        }
-        if (top + panelHeight > $(window).height()) {
-            top = pos.top - panelHeight;
-            this.result_panel.addClass(this.id + "_top");
+        if (this.attemptToFitIn !== "none") {
+            var panelWidth = this.result_panel.outerWidth();
+            var panelHeight = this.result_panel.outerHeight();
+            if (left + panelWidth > $(window).width() && $(window).width() - panelWidth >= 0) {
+                left = $(window).width() - panelWidth;
+            }
+            else if (this.attemptToFitIn === "resize" && left + panelWidth > $(window).width() && $(window).width() - panelWidth < 0) {
+                this.result_panel.width($(window).width() - left);
+            }
+            if (top + panelHeight > $(window).height() && pos.top - panelHeight >= 0) {
+                top = pos.top - panelHeight;
+                this.result_panel.addClass(this.id + "_top");
+            }
+            else if (this.attemptToFitIn === "resize" && top + panelHeight > $(window).height() && pos.top - panelHeight < 0) {
+                this.result_panel.height($(window).height() - top);
+            }
         }
         this.result_panel.addClass(this.id + "_float");
         this.result_panel.css({
@@ -231,20 +291,54 @@
         });
     }
 
-    function showAll(tag) {
-        var group = $("." + tag);
+    function showMore(tag) {
         var currentData = this.currentData[tag];
-        var showMoreBtn = $("." + tag + "-showMore");
+        var toggleBtn = $("." + tag + ".search-toggle-btn").children("a");
         var showAmount = this.showAmount[tag];
-        var currentElement = this.template.find("." + tag).clone();
-        var prevItem = showMoreBtn;
-        for (var i = showAmount; i < currentData.length; i++) {
-            currentElement.find("." + tag + "-text").addBack("." + tag + "-text").text(currentData[i]);
-            prevItem.after(currentElement);
-            prevItem = currentElement;
-            currentElement = prevItem.clone();
+        var prevItem = $("." + tag + "-item").last();
+        var currentItem = prevItem.clone();
+        for (var j = showAmount; j < currentData.length; j++) { // For each item in the group
+            for (var k = 0; k < currentData[j].length; k++) { // For each element in the item
+                var type = currentData[j][k].type;
+                var elementClassSelector = "." + tag + "-" + type;
+                var value = currentData[j][k].value;
+                var index = currentData[j][k].index;
+                var currentElement = currentItem.find(elementClassSelector).addBack(elementClassSelector).eq(index);
+                for (var key in value) { // For each attribute of current element
+                    if (key === "text") {
+                        currentElement.text(currentData[j][k].value[key]);
+                    }
+                    else if (key === "src" || key === "href" || key === "id") {
+                        currentElement.attr(key, currentData[j][k].value[key]);
+                    }
+                    else if (key === "html") {
+                        currentElement.html(currentData[j][k].value[key]);
+                    }
+                    else if (key === "class") {
+                        currentElement.addClass(currentData[j][k].value[key]);
+                    }
+                }
+            }
+            if (prevItem) {
+                prevItem.after(currentItem);
+            }
+            prevItem = currentItem;
+            currentItem = currentItem.clone();
         }
-        showMoreBtn.remove();
+        toggleBtn.text("-");
     }
 
+    function hideMore(tag) {
+        var showAmount = this.showAmount[tag];
+        var toggleBtn = $("." + tag + ".search-toggle-btn").children("a");
+        $("." + tag + "-item").slice(showAmount).remove();
+        toggleBtn.text("+");
+    }
+
+    function toggleDataFcn(target) {
+        if (target.text() === '+') {
+            return true;
+        }
+        return false;
+    }
 } ());

@@ -5,6 +5,8 @@ To enable this searchBox plug-in on the page, you need three parameters: configu
 
 ## Configuration Option
 
+#### Options with ★ is required.
+
 ### ajax_url: String       ★
 The url for retrieving search results (GET).
 ### result_tag: Array[String]      ★
@@ -30,10 +32,13 @@ If this is set to true, then the `lazySearch` option is ignored.
 A boolean that determines whether to perform a search at the very beginning where user clicks on the search box and hasn't entered any query yet. This can be used to display suggestions, query cheatsheets, and so on.
 ### attachToSearchBox: Boolean
 A boolean that controls whether the result panel should be attached to the search box, so that it always appears at the bottom of search box if possible.**Default to be `false`.**
+### attemptToFitIn: Boolean
+A boolean that decides whether the result panel should always try to fit itself in the window. If this is set to `true`, then when the space available is too small for the result panel, the panel would try to place itself on the right or the top, if it still cannot fit in, it would decrease the size of itself, and add scrollbar if necessary.
+
+Note that this would have no effect if `attachToSearchBox` is set to `false`, since in that case the result panel would not move, and should always have enough space.
 ### showAmount: Number || Object
 The value decides how many data entries would be displayed for **each** data group.
 
-**Default to have every data group display all the value it contains.**
 
 If this is set to a number, then all data groups would display the same number of data entries(if they could). This can also be set to an object, which would look like:
 ```
@@ -44,50 +49,95 @@ If this is set to a number, then all data groups would display the same number o
 ```
 This means that only display one data entry for "line" group, and display all data in "block" group. The "block" key-value pair can be omitted.
 
-#### Options with ★ is required.
+**Default to have every data group display all the value it contains.**
+### toggleDataFcn: Function
+User can set a function to decide when to show all the results for one group, and when to hide extra results. This function should return `true` when all the results will be displayed, `false` otherwise. This should always be set if a custom template is used.
 
-## Search Box Element       ★
+## Search Box Element       
 The element pointer to the input box where user enters query. Should be a jQuery element.
 
-## Result Panel Element     ★
+## Result Panel Element     
 The element pointer to the element where search results are displayed. Should be a jQuery element.
 
 ## Result JSON Format
 Assume the data contains two groups of items, "line" and "block", that would like to be displayed in different ways, then the result from ajax call should be something like:
 ```
 {
-    "line":[
-        "line1","line2",...
+    "line": [                       // name of data group
+        [
+            {
+                "type":"text",      // name of element type, 
+                                    // this would match elements with class "line-text"
+                "index":"0",        // the index of this element among elements with same type
+                "value":{
+                    "text":...      // values and attributes of this element
+                }
+            },
+            {
+                "type":"img",
+                "index":"0",
+                "value":{
+                    "src":...
+                    "class":...
+                }
+            },
+            {
+                "type":"img",
+                "index":"1",
+                "value":{
+                    "src":...
+                    "class":...
+                }
+            },
+            ...
+        ],
+        ...
     ],
-    "block":[
-        "block1","block2",...
+    "block": [
+        [
+            {
+                "type":"text",
+                "index":"0",
+                "value":{
+                    "text":...
+                    "id":...
+                }
+            }
+        ],
+        [
+            {
+                "type":"text",
+                "index":"0",
+                "value":{
+                    "text":...
+                }
+            }
+        ]
     ]
-}
+})
 ```
 The keys ("line","block") have to match what is in the `result_tag` option, but the order doesn't have to be exactly the same.
 
-## Template Format
-Still, assume we have two groups of data, "line" and "block". Then in the template, we have to define six classes: `.line`, `.line-text`, `line-showMore`, `.block`, `.block-text`, `block-showMore`.
 
-`.line` and `.block` are what would get repeated for every data entry in the result JSON, `.line-text` and `.block-text` are where the data actually goes in, while `.line-showMore` and `.block-showMore` would only appear at the end when `showAmount` is set and the result is not fully displayed.
+The JSON is expected to match what is in the template. Any element that exists in the JSON but not in the template would be ignored. However, if an element is in the template, but there is no related data coming back, then it would be deleted, it would remain what it is like as in the template.
+
+Each element in the list must have all three fields: `type`, `index` and `value`. Entries in the same group should have same list of elements. You can define any element type as you like. As for the `value` object, the valid keys are `text`,`src`,`href`,`id`,`html` and `class`, all the others would be ignored.
+
+## Template Format
+For each tag in the `result_tag` list, you must define a `tag-item` class in the template. This would be the unit that repeats for every data entry under the group with that tag in the JSON data. 
+
+A `tag-title` class is also useful for having a title element for each group of data, however, this is not mandatory.
+
+Besides these two classes that are mentioned above, you can define any other classes with prefix `tag-` in the template, they would be automatically matched with the data coming from AJAX if possible. These classes should have corresponding data in the JSON, otherwise they won't be added into the result panel.
 
 <a name="defaultTemplate"></a>The default template is:
 ```
 <ul class='container'>
-    <li class='tag tag-text'></li>
-    <li class="tag-showMore' search-data-tag='tag'><a href='#'>Show More</a></li>
+    <h3 class="tag-title"><span class="search-toggle-btn"><a href="#" class="tag"></a></span></h3>
+    <li class="tag tag-item"><p class="tag tag-text"></p><img class="tag tag-img"/></li>Ï
 </ul>
 ```
-where `tag` would be replaced by "line" and "block". With the JSON result and `showAmount` option showing above,  we would eventually get:
-```
-<ul class="container">
-    <li class="line line-text">line1</li>
-    <li class="line-showMore" search-data-tag='line'><a href='#'>Show More</a></li>
-    <li class="block block-text">block1</li>
-    <li class="block block-text">block2</li>
-</ul>
-```
-If you click on the `Show More` button, it would remove itself and add in all the data entries that was omitted before.
+where `tag` would be replaced by tags like "line" and "block". 
 ## API
 
 ### searchBox.show()

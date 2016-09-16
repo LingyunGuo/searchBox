@@ -1,15 +1,21 @@
 ul {
     list-style: none;
+    padding: 0px;
 }
 
 [id*="_result"] {
     max-width: 800px;
+    max-height: 500px;
+    overflow-x: auto;
 }
 
 [id*="_result"] a {
+    text-decoration: none;
     color: #def;
 }
-
+[class*="-item"] {
+    margin: 15px 0px;
+}
 [class*="_float"] {
     font-family: "Open Sans", sans-serif;
     width: 500px;
@@ -18,7 +24,7 @@ ul {
     display: none;
     background: #2c2c2c;
     color: #def;
-    padding: 10px;
+    padding: 0px 10px;
     border-radius: 0px 0px 10px 10px;
     box-shadow: 5px 5px 5px #a0a0a0;
 }
@@ -26,4 +32,8 @@ ul {
 [class*="_top"] {
     border-radius: 10px 10px 0px 0px;
     box-shadow: 5px -5px 5px #a0a0a0;
+}
+
+.search-toggle-btn {
+    float: right;
 }
