@@ -32,8 +32,14 @@ If this is set to true, then the `lazySearch` option is ignored.
 A boolean that determines whether to perform a search at the very beginning where user clicks on the search box and hasn't entered any query yet. This can be used to display suggestions, query cheatsheets, and so on.
 ### attachToSearchBox: Boolean
 A boolean that controls whether the result panel should be attached to the search box, so that it always appears at the bottom of search box if possible.**Default to be `false`.**
-### attemptToFitIn: Boolean
-A boolean that decides whether the result panel should always try to fit itself in the window. If this is set to `true`, then when the space available is too small for the result panel, the panel would try to place itself on the right or the top, if it still cannot fit in, it would decrease the size of itself, and add scrollbar if necessary.
+### attemptToFitIn: String
+This value decides whether the result panel should always try to fit itself in the window. 
+
+If this is set to `auto`, then when the space available is too small for the result panel, the panel would try to place itself on the right or the top. 
+
+If it is set to `resize`, then the panel will first try to move the position to fit itself in, and in the case that it still cannot fit in, it would decrease the size of itself, and add scrollbar if necessary. 
+
+If this is set to `none`, the result panel would always be at the right bottom of the search box, no matter it would be fullly displayed or not.
 
 Note that this would have no effect if `attachToSearchBox` is set to `false`, since in that case the result panel would not move, and should always have enough space.
 ### showAmount: Number || Object
