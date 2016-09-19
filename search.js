@@ -27,26 +27,27 @@
                 url: this.templateUrl,
                 dataType: "html"
             }).done(function (responseHtml) {
-                this.template = responseHtml;
+                var template = $.parseHTML(responseHtml);
+                that.template = $(template);
             });
         }
         else {
-            var html = "<ul class='container'>";
+            var html = "<ul>";
             for (var i = 0; i < this.result_tag.length; i++) {
+                // default template
                 html += "<h3 class='" + this.result_tag[i] + "-title'>" + this.result_tag[i] + "<span class='search-toggle-btn ";
                 html += this.result_tag[i] + "'><a href='#' class='" + this.result_tag[i] + "'>+</a></span></h3>";
-                html += "<li class='" + this.result_tag[i] + " " + this.result_tag[i] + "-item'>"; html += "<p class='" + this.result_tag[i] + " " + this.result_tag[i] + "-text'></p><img class='" + this.result_tag[i] + " " + this.result_tag[i] + "-img'/></li>";
+                html += "<li class='" + this.result_tag[i] + " " + this.result_tag[i] + "-item'>"; html += "<p class='" + this.result_tag[i] + " " + this.result_tag[i] + "-text'></p></li>";
                 if (i != this.result_tag.length - 1) {
                     html += "<li><hr/></li>";
                 }
             }
             html += "</ul>";
             this.template = $.parseHTML(html);
+            this.template = $(this.template);
         }
-        this.template = $(this.template);
         this.lazySearch = (undefined === option.lazySearch ? true : option.lazySearch);
         this.disappearOnBlur = (undefined === option.disappearOnBlur ? true : option.disappearOnBlur);
-        this.showOnClick = option.showOnClick;
         this.searchAtStart = option.searchAtStart;
         this.searchOnEnter = option.searchOnEnter;
         this.attachToSearchBox = option.attachToSearchBox;
@@ -130,12 +131,6 @@
                 }
             });
         }
-        if (this.showOnClick) {
-            that.search_box.click(function () {
-                event.stopPropagation();
-                searchBox.prototype.show.call(that);
-            });
-        }
     }
 
     function quitSearch() {
@@ -185,9 +180,7 @@
                     that.currentData = data;
                     clearPanel.call(that);
                     var elements = displayResult(that.result_tag, that.showAmount, that.currentData, that.template.clone());
-                    for (var i = 0; i < elements.length; i++) {
-                        that.result_panel.append(elements[i]);
-                    }
+                    that.result_panel.append(elements);
                     searchBox.prototype.show.call(that);
                     if (that.attachToSearchBox) {
                         setPosition.call(that);
@@ -206,10 +199,7 @@
             var currentTag = tagList[i];
             var currentData = data[currentTag];
             var title = template.find("." + currentTag + "-title");
-            if (title) {
-                templateList.push(title.clone());
-            }
-            var currentItem = template.find("." + currentTag + "-item").clone();
+            var currentItem = template.find("." + currentTag + "-item");
             var prevItem;
             var maximum;
             if (undefined !== showAmount[currentTag]) {
@@ -218,7 +208,9 @@
             else {
                 maximum = currentData.length;
             }
-
+            if (maximum === currentData.length) {
+                title.children("span").remove();
+            }
             for (var j = 0; j < maximum; j++) { // For each item in the group
                 for (var k = 0; k < currentData[j].length; k++) { // For each element in the item
                     var type = currentData[j][k].type;
@@ -236,7 +228,7 @@
                         if (key === "text") {
                             currentElement.text(currentData[j][k].value[key]);
                         }
-                        else if (key === "src" || key === "href" || key === "id") {
+                        else if (key === "src" || key === "href" || key === "id" || key === "title" || key === "alt") {
                             currentElement.attr(key, currentData[j][k].value[key]);
                         }
                         else if (key === "html") {
@@ -257,9 +249,8 @@
             if (maximum !== showAmount[currentTag]) {
                 $("." + tagList[i] + ".search-toggle-btn").children("a").remove();
             }
-            templateList.push(currentItem);
         }
-        return templateList;
+        return template;
     }
 
     function setPosition() {
@@ -293,9 +284,9 @@
 
     function showMore(tag) {
         var currentData = this.currentData[tag];
-        var toggleBtn = $("." + tag + ".search-toggle-btn").children("a");
+        var toggleBtn = $("#" + this.id + "_result ." + tag + ".search-toggle-btn").children("a");
         var showAmount = this.showAmount[tag];
-        var prevItem = $("." + tag + "-item").last();
+        var prevItem = $("#" + this.id + "_result ." + tag + "-item").last();
         var currentItem = prevItem.clone();
         for (var j = showAmount; j < currentData.length; j++) { // For each item in the group
             for (var k = 0; k < currentData[j].length; k++) { // For each element in the item
@@ -330,8 +321,8 @@
 
     function hideMore(tag) {
         var showAmount = this.showAmount[tag];
-        var toggleBtn = $("." + tag + ".search-toggle-btn").children("a");
-        $("." + tag + "-item").slice(showAmount).remove();
+        var toggleBtn = $("#" + this.id + "_result ." + tag + ".search-toggle-btn").children("a");
+        $("#" + this.id + "_result ." + tag + "-item").slice(showAmount).remove();
         toggleBtn.text("+");
     }
 

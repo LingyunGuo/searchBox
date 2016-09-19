@@ -21,10 +21,6 @@ The url used to read in result display template, if no templateUrl is set, the s
 A boolean that determines whether to do the search everytime a character is entered, or only perform ajax call when the user stops typing. **Default to be `true` (only search when typing stops).**
 ### disappearOnBlur: Boolean
 A boolean that controls whether the result panel should disappear when both search box and result panel is not focused. **Default to be `false`.**
-### showOnClick: Boolean
-A boolean that controls whether the result panel should pop up when search box is clicked. **Default to be `false`.**
-
-This would have no effect if disappearOnBlur is not set or set to be false, since the result panel would always be on the page.
 ### searchOnEnter: Boolean
 A boolean that determines whether to perform search whenever typing stops or only when `Enter` key is pressed. **Default to be `false`.**
 If this is set to true, then the `lazySearch` option is ignored.
@@ -127,7 +123,7 @@ The keys ("line","block") have to match what is in the `result_tag` option, but 
 
 The JSON is expected to match what is in the template. Any element that exists in the JSON but not in the template would be ignored. However, if an element is in the template, but there is no related data coming back, then it would be deleted, it would remain what it is like as in the template.
 
-Each element in the list must have all three fields: `type`, `index` and `value`. Entries in the same group should have same list of elements. You can define any element type as you like. As for the `value` object, the valid keys are `text`,`src`,`href`,`id`,`html` and `class`, all the others would be ignored.
+Each element in the list must have all three fields: `type`, `index` and `value`. Entries in the same group should have same list of elements. You can define any element type as you like. As for the `value` object, the valid keys are `text`, `src`, `href`, `id`, `html`, `title`, `alt`, and `class`, all the others would be ignored.
 
 ## Template Format
 For each tag in the `result_tag` list, you must define a `tag-item` class in the template. This would be the unit that repeats for every data entry under the group with that tag in the JSON data. 

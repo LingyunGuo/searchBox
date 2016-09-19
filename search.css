@@ -37,3 +37,8 @@ ul {
 .search-toggle-btn {
     float: right;
 }
+
+#anotherSearchBox, #anotherSearchBox_result {
+    position: relative;
+    left: 600px;
+}
