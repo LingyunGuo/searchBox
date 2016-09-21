@@ -1,5 +1,5 @@
 (function () {
-    var window = this;
+    var _window = this;
     this.searchBox = function (option, search_box, result_panel) {
         var that = this;
 
@@ -7,10 +7,13 @@
             throw new Error("The option is required to be an object.");
         }
         if (search_box === undefined || !(search_box instanceof jQuery)) {
-            throw new Error("Search box is requried to be an HTML element");
+            throw new Error("Search box is requried to be an HTML element.");
         }
         if (result_panel === undefined || !(result_panel instanceof jQuery)) {
-            throw new Error("Result panel is requried to be an HTML element");
+            throw new Error("Result panel is requried to be an HTML element.");
+        }
+        if (option.result_tag === undefined || !(option.result_tag instanceof Array)) {
+            throw new Error("An array of result tags should be given.");
         }
 
         // read in options
@@ -25,10 +28,14 @@
             this.templateUrl = option.templateUrl;
             $.ajax({
                 url: this.templateUrl,
-                dataType: "html"
-            }).done(function (responseHtml) {
-                var template = $.parseHTML(responseHtml);
-                that.template = $(template);
+                dataType: "html",
+                success: function (responseHTML) {
+                    var template = $.parseHTML(responseHTML);
+                    that.template = $(template);
+                },
+                error: function (err) {
+                    throw err;
+                }
             });
         }
         else {
@@ -65,7 +72,7 @@
                 this.showAmount[this.result_tag[i]] = option.showAmount[this.result_tag[i]];
             }
             else {
-                throw new Error("Invalid showAmount option");
+                throw new Error("Invalid showAmount option.");
             }
         }
         applyConfig.call(that);
@@ -79,8 +86,8 @@
                 event.stopPropagation();
                 if (that.toggleDataFcn($(event.target))) {
                     showMore.call(that, tag);
-                    if (this.attachToSearchBox) {
-                        setPosition.call(this);
+                    if (that.attachToSearchBox) {
+                        setPosition.call(that);
                     }
                 }
                 else {
@@ -106,16 +113,16 @@
         if (undefined !== query) {
             this.query = query;
         }
-        getResult.call(this);
+        getResult.call(this, query);
         if (false !== show) {
             this.result_panel.css("display", "block");
         }
     };
     searchBox.prototype.clear = function () {
-        clearPanel();
+        clearPanel.call(this);
     };
 
-    function applyConfig() {
+    var applyConfig = function () {
         var that = this;
         if (that.searchAtStart) {
             that.search_box.click(function () {
@@ -124,25 +131,25 @@
                 }
             });
         }
-        if (this.disappearOnBlur) {
-            $(window.document).click(function (event) {
+        if (that.disappearOnBlur) {
+            $(_window.document).click(function (event) {
                 if (that.search_box.has($(event.target)).length <= 0 && that.result_panel.has($(event.target)).length <= 0) {
                     searchBox.prototype.hide.call(that);
                 }
             });
         }
-    }
+    };
 
-    function quitSearch() {
+    var quitSearch = function () {
         this.search_box.val("");
         clearPanel.call(this);
-    }
+    };
 
-    function clearPanel() {
+    var clearPanel = function () {
         this.result_panel.empty();
-    }
+    };
 
-    function keyUp(keyEvent) {
+    var keyUp = function (keyEvent) {
         var that = this;
         if (keyEvent.keyCode === 27) {
             return quitSearch.call(that);
@@ -154,9 +161,9 @@
             return;
         }
         if (that.lazySearch) {
-            if (that.loading) {
-                clearTimeout(that.loading);
-            }
+            // if (that.loading) {
+            clearTimeout(that.loading);
+            // }
             that.loading = setTimeout(function () {
                 getResult.call(that);
             }, 200);
@@ -164,11 +171,13 @@
         else {
             getResult.call(that);
         }
-    }
+    };
 
-    function getResult() {
+    var getResult = function (query) {
         var that = this;
-        that.query = that.search_box.val();
+        if (!query) {
+            that.query = that.search_box.val();
+        }
 
         $.ajax(that.ajax_url, {
             data: {
@@ -188,13 +197,12 @@
                 }
             },
             error: function (data) {
-                throw JSON.stringify(data);
+                throw data;
             }
         });
-    }
+    };
 
-    function displayResult(tagList, showAmount, data, template) {
-        var templateList = [];
+    var displayResult = function (tagList, showAmount, data, template) {
         for (var i = 0; i < tagList.length; i++) { // For each group of data
             var currentTag = tagList[i];
             var currentData = data[currentTag];
@@ -211,17 +219,20 @@
             if (maximum === currentData.length) {
                 title.children("span").remove();
             }
+            if (maximum === 0) {
+                template.find("." + currentTag + "-item").remove();
+            }
             for (var j = 0; j < maximum; j++) { // For each item in the group
                 for (var k = 0; k < currentData[j].length; k++) { // For each element in the item
                     var type = currentData[j][k].type;
-                    var elementClassSelector = "." + tagList[i] + "-" + type;
+                    var elementClassSelector = "." + currentTag + "-" + type;
                     var value = currentData[j][k].value;
                     var index = currentData[j][k].index;
                     var currentElement = currentItem.find(elementClassSelector).addBack(elementClassSelector);
-                    if (currentElement) {
+                    if (currentElement.length) {
                         currentElement = currentElement.eq(index);
                     }
-                    if (!currentElement) {
+                    if (!currentElement.length) {
                         break;
                     }
                     for (var key in value) { // For each attribute of current element
@@ -251,9 +262,9 @@
             }
         }
         return template;
-    }
+    };
 
-    function setPosition() {
+    var setPosition = function () {
         var pos = this.search_box.offset();
         var search_box_height = this.search_box.outerHeight();
         var top = pos.top + search_box_height;
@@ -261,18 +272,18 @@
         if (this.attemptToFitIn !== "none") {
             var panelWidth = this.result_panel.outerWidth();
             var panelHeight = this.result_panel.outerHeight();
-            if (left + panelWidth > $(window).width() && $(window).width() - panelWidth >= 0) {
-                left = $(window).width() - panelWidth;
+            if (left + panelWidth > $(_window).width() && $(_window).width() - panelWidth >= 0) {
+                left = $(_window).width() - panelWidth;
             }
-            else if (this.attemptToFitIn === "resize" && left + panelWidth > $(window).width() && $(window).width() - panelWidth < 0) {
-                this.result_panel.width($(window).width() - left);
+            else if (this.attemptToFitIn === "resize" && left + panelWidth > $(_window).width() && $(_window).width() - panelWidth < 0) {
+                this.result_panel.width($(_window).width() - left);
             }
-            if (top + panelHeight > $(window).height() && pos.top - panelHeight >= 0) {
+            if (top + panelHeight > $(_window).height() && pos.top - panelHeight >= 0) {
                 top = pos.top - panelHeight;
                 this.result_panel.addClass(this.id + "_top");
             }
-            else if (this.attemptToFitIn === "resize" && top + panelHeight > $(window).height() && pos.top - panelHeight < 0) {
-                this.result_panel.height($(window).height() - top);
+            else if (this.attemptToFitIn === "resize" && top + panelHeight > $(_window).height() && pos.top - panelHeight < 0) {
+                this.result_panel.height($(_window).height() - top);
             }
         }
         this.result_panel.addClass(this.id + "_float");
@@ -280,9 +291,9 @@
             top: top,
             left: left
         });
-    }
+    };
 
-    function showMore(tag) {
+    var showMore = function (tag) {
         var currentData = this.currentData[tag];
         var toggleBtn = $("#" + this.id + "_result ." + tag + ".search-toggle-btn").children("a");
         var showAmount = this.showAmount[tag];
@@ -317,19 +328,19 @@
             currentItem = currentItem.clone();
         }
         toggleBtn.text("-");
-    }
+    };
 
-    function hideMore(tag) {
+    var hideMore = function (tag) {
         var showAmount = this.showAmount[tag];
         var toggleBtn = $("#" + this.id + "_result ." + tag + ".search-toggle-btn").children("a");
         $("#" + this.id + "_result ." + tag + "-item").slice(showAmount).remove();
         toggleBtn.text("+");
-    }
+    };
 
-    function toggleDataFcn(target) {
+    var toggleDataFcn = function (target) {
         if (target.text() === '+') {
             return true;
         }
         return false;
-    }
+    };
 } ());
